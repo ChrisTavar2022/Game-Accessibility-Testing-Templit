@@ -143,4 +143,4 @@ That means you're free to use, adapt, and redistribute this template, including 
 
 Suggested attribution:
 
-> "Game Accessibility Testing Templit" by Christopher Tavarez, licensed under CC BY 4.0. Source: `[repo URL]`
+> "Game Accessibility Testing Templit" by Christopher Tavarez, licensed under CC BY 4.0. Source: https://github.com/ChrisTavar2022/Game-Accessibility-Testing-Templit
