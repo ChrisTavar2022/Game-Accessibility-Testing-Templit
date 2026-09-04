@@ -17,6 +17,16 @@ wb = openpyxl.load_workbook(SRC)
 # Names from superseded designs; harmless if absent.
 for stale in ("SummaryTabNames", "SeverityNumbers"):
     wb.defined_names.pop(stale, None)
+# NVDA writes its own "Title_<random hex id>" / "RowTitle_..." / "ColumnTitle_..."
+# defined name whenever someone presses NVDA+Shift+C or +R on this file and saves.
+# A hand-set one like that was tried here as a way to pre-configure header reading
+# on the Setup tab's Dropdown Lists grid, but didn't survive closing and reopening
+# the file (live-tested 2026-09-05) - superseded by making that grid a real Excel
+# Table instead (see below), the same mechanism the log tabs already use. Strip any
+# leftover manual one so it doesn't linger as dead, non-functional clutter.
+for stale in list(wb.defined_names.keys()):
+    if stale.startswith(("Title_", "RowTitle_", "ColumnTitle_")):
+        del wb.defined_names[stale]
 
 HEADER_FILL = PatternFill("solid", fgColor="FF38761D")
 HEADER_FONT = Font(name="Arial", size=10, bold=True, color="FFFFFFFF")
@@ -81,11 +91,47 @@ def write_header(ws, row, labels, start_col=1):
 
 
 def add_table(ws, name, ref):
-    tbl = Table(displayName=name, ref=ref)
+    # totalsRowShown explicit False to match what Excel itself writes for a table
+    # with no totals row - openpyxl leaves the attribute out entirely otherwise,
+    # which is spec-ambiguous (schema default is true) even though Excel itself
+    # was confirmed (via COM) to already interpret the omitted form correctly.
+    tbl = Table(displayName=name, ref=ref, totalsRowShown=False)
     tbl.tableStyleInfo = TableStyleInfo(
-        name="TableStyleLight1", showRowStripes=True, showColumnStripes=False
+        name="TableStyleLight1", showRowStripes=True, showColumnStripes=False,
+        # Marks the table's first column as a row-identity column (like a row
+        # header) to Excel's own accessibility layer - a native, built-in Excel
+        # feature, not an NVDA-specific setting. In NVDA's modern "UI Automation"
+        # mode this is what lets it announce that first-column value (Issue ID,
+        # on the log tabs) automatically while moving through other columns far
+        # down the table, without any NVDA+Shift+R designation (which is a
+        # separate, older mechanism that explicitly does not work under UI
+        # Automation - the two are not both needed). Direct cell fonts (BODY_FONT)
+        # already override the visual bolding this normally adds, so it's a pure
+        # accessibility flag here, not a styling change.
+        showFirstColumn=True,
     )
     ws.add_table(tbl)
+
+
+def dynamic_list_ref(sheet_name, col_letter, first_row, last_row):
+    """Named-range formula for a dropdown source that trims off its own trailing
+    reserved-for-growth blank rows.
+
+    Every dropdown source list here reserves extra blank rows below its seed
+    values so users can add their own entries later. A static range covering
+    those blanks reproduces a well-documented (non-NVDA) Excel bug: opening a
+    dropdown on a blank cell makes Excel match the first blank entry in the
+    source list, which - since the blanks sit at the end - opens the list
+    scrolled to the bottom instead of the top. Trimming the range to
+    COUNTA(range) rows removes the blanks from the source entirely, so there's
+    nothing left for a blank cell to match and the dropdown opens at the top.
+    This assumes entries stay a single unbroken run from the first data row -
+    already the documented expectation for these lists (see the Severity Scale
+    and Setup tab instructions) - since a gap partway through would make the
+    count undershoot and cut off whatever comes after it.
+    """
+    full = f"'{sheet_name}'!${col_letter}${first_row}:${col_letter}${last_row}"
+    return f"{full.split(':')[0]}:INDEX({full},COUNTA({full}))"
 
 
 def write_instructions(ws, lines):
@@ -110,12 +156,14 @@ row_cursor = write_instructions(setup, [
     "2. Go to the 'Game Sections' tab and list every section/component of your game (Title Screen, Gameplay, Pause Menu, etc.) - the Game Section dropdown on every log tab updates automatically as you add rows there. Add 3 or 30 - there's no limit.",
     "3. Log one issue per row in the Visual, Screen Reader, Keyboard, and Controller tabs. Free-type the description fields; use the dropdowns for Game Section, Error Type, Severity, Platform, Input Method, Screen Reader Used, and Status. The Error Type lists below are yours to edit - for example, swap in terminology from a framework like WCAG or the Game Accessibility Guidelines, since those categorize the kind of issue rather than how severe it is.",
     "4. NVDA/JAWS tip: to choose from a dropdown cell, select the cell but do NOT press F2. Press Alt+Down Arrow to open its list, use Up/Down Arrow to move through the options, then Enter to select. F2 switches to text-editing mode, where Up/Down Arrow won't respond to the list - if that happens, press Escape first, then use Alt+Down Arrow instead.",
-    "5. Status is always a plain text word (Open, In Progress, Resolved, Won't Fix, Duplicate, Needs More Info) - never rely on color alone.",
-    "6. Severity levels live on the 'Severity Scale' tab and are fully editable - rename them, add more, or replace them with your own wording. The Severity dropdown and the Summary tab follow whatever you put there.",
-    "7. Header rows on most tabs are locked to prevent accidental edits. All the entry cells below them stay fully editable. The 'Severity Scale' tab is left completely unlocked so you can restructure it freely.",
-    "8. Each row's Issue ID appears automatically as soon as you pick a Game Section for that row. Rows with no Game Section chosen stay completely blank.",
-    "9. Each log tab has 2,000 ready-to-use rows, so you won't run out for any realistic number of bugs. If you ever do fill all 2,000: go to Review > Unprotect Sheet (there is no password), then just start typing in the first empty row underneath - the table and its dropdowns extend automatically. The Issue ID does not copy itself, so also copy the Issue ID cell from the row above into the new row. Re-protect the sheet afterwards if you want the headers locked again.",
-    "10. See the 'Summary' tab for issue totals by severity and by tab, plus instructions for adding your own custom log tabs.",
+    "5. Known NVDA/Excel bug: after you press Enter to pick a dropdown option, focus can occasionally get stuck (Tab out of the Excel window and back in to recover). This is a longstanding NVDA/Excel interaction issue, not something this workbook causes or can fix. If you hit it, try toggling \"Use UI Automation to access Microsoft Excel spreadsheet controls\" in NVDA's Preferences > Settings > Advanced - flipping it (on if it's off, off if it's on) resolves this for most people, depending on your Excel/NVDA version.",
+    "6. The Dropdown Lists grid below (Status, Platform, etc.) is a real Excel Table, just like the log tabs, so your screen reader announces each column's header automatically as you move down it - no setup needed.",
+    "7. Status is always a plain text word (Open, In Progress, Resolved, Won't Fix, Duplicate, Needs More Info) - never rely on color alone.",
+    "8. Severity levels live on the 'Severity Scale' tab and are fully editable - rename them, add more, or replace them with your own wording. The Severity dropdown and the Summary tab follow whatever you put there.",
+    "9. Header rows on most tabs are locked to prevent accidental edits. All the entry cells below them stay fully editable. The 'Severity Scale' tab is left completely unlocked so you can restructure it freely.",
+    "10. Each row's Issue ID appears automatically as soon as you pick a Game Section for that row. Rows with no Game Section chosen stay completely blank.",
+    "11. Each log tab has 2,000 ready-to-use rows, so you won't run out for any realistic number of bugs. If you ever do fill all 2,000: go to Review > Unprotect Sheet (there is no password), then just start typing in the first empty row underneath - the table and its dropdowns extend automatically. The Issue ID does not copy itself, so also copy the Issue ID cell from the row above into the new row. Re-protect the sheet afterwards if you want the headers locked again.",
+    "12. See the 'Summary' tab for issue totals by severity and by tab, plus instructions for adding your own custom log tabs.",
     f"Original template created by {AUTHOR_NAME}. Please keep this credit if you share or adapt it.",
 ])
 
@@ -143,7 +191,9 @@ row_cursor = info_table_last_row + 2
 
 # --- Dropdown source lists ---
 setup.cell(row=row_cursor, column=1,
-           value="Dropdown Lists (add or edit rows below each heading; dropdowns update automatically)").font = TITLE_FONT
+           value="Dropdown Lists (add or edit rows below each heading; dropdowns update automatically). "
+                 "Keep each list a single unbroken run with no blank rows in the middle - a gap "
+                 "cuts the dropdown short at that point.").font = TITLE_FONT
 setup.cell(row=row_cursor, column=1).protection = LOCKED
 
 LIST_HEADER_ROW = row_cursor + 1
@@ -155,20 +205,20 @@ LIST_HEADER_ROW = row_cursor + 1
 lists = {
     "A": ("Status", [
         "Open", "In Progress", "Resolved", "Won't Fix", "Duplicate", "Needs More Info",
-    ], 9),
+    ], 15),
     "B": ("Platform", [
         "PC (Windows)", "PC (Steam Deck)", "PlayStation 5", "PlayStation 4",
         "Xbox Series X|S", "Xbox One", "Nintendo Switch", "Nintendo Switch 2",
         "Mac", "Linux", "Android", "Other",
-    ], 13),
+    ], 15),
     "C": ("Input Method", [
         "Keyboard", "Mouse", "Keyboard + Mouse", "Xbox Controller",
         "PlayStation Controller", "Switch Pro Controller", "Touch",
         "Switch / Adaptive Controller", "Other",
-    ], 11),
+    ], 15),
     "D": ("Screen Reader Used", [
         "NVDA", "JAWS", "Narrator", "VoiceOver", "TalkBack", "None / N/A", "Other",
-    ], 9),
+    ], 15),
     "E": ("Visual Error Types", [
         "Color-Only Indicator", "Text Too Small / Not Scalable", "UI Element Not Visible",
         "Font / Rendering Issue", "Flashing / Strobing Content", "Missing Visual Feedback", "Other",
@@ -202,12 +252,23 @@ for col_letter, (title, values, row_count) in lists.items():
         cell.value = values[i] if i < len(values) else None
         cell.font = BODY_FONT
         cell.protection = UNLOCKED
-    named_range_targets[title] = f"${col_letter}${LIST_HEADER_ROW + 1}:${col_letter}${last_row}"
+    named_range_targets[title] = dynamic_list_ref(
+        "Setup", col_letter, LIST_HEADER_ROW + 1, last_row
+    )
 
 # Captured for the Summary tab's Issues by Status block, which mirrors the Status
 # list the same way Issues by Severity mirrors the 'Severity Scale' sheet.
 STATUS_FIRST_DATA_ROW = LIST_HEADER_ROW + 1
 STATUS_ROW_COUNT = lists["A"][2]
+
+# A real Excel Table, same as every log tab, so NVDA/JAWS announce each column's
+# header (Status, Platform, etc.) automatically as you move down it - no per-user
+# setup step. (A hand-set NVDA+Shift+C/R header designation was tried first and
+# reverse-engineered into a defined name, but didn't survive closing and reopening
+# the file - live-tested 2026-09-05 and confirmed not to work. This Table approach
+# reuses a mechanism already verified working elsewhere in this same workbook.)
+# All 8 lists share one row_count (see above) so this range is a clean rectangle.
+add_table(setup, "tbl_DropdownLists", f"A{LIST_HEADER_ROW}:H{LIST_HEADER_ROW + 15}")
 
 for col, w in {"A": 26, "B": 20, "C": 24, "D": 20, "E": 26, "F": 28, "G": 26, "H": 24}.items():
     setup.column_dimensions[col].width = w
@@ -225,7 +286,7 @@ for defined_name, title in {
     "ControllerErrorTypes": "Controller Error Types",
 }.items():
     wb.defined_names[defined_name] = DefinedName(
-        defined_name, attr_text=f"'Setup'!{named_range_targets[title]}"
+        defined_name, attr_text=named_range_targets[title]
     )
 
 # ===========================================================================
@@ -235,8 +296,10 @@ gs = reset_sheet("Game Sections")
 gs_instr = gs.cell(row=1, column=1, value=(
     "List every section/component of this game or mod being tested - one per row. "
     "The Game Section dropdown on every log tab updates automatically as you add rows. "
-    "500 rows are ready to use; if you ever fill all of them, right-click a row number "
-    "in this list and choose Insert to add more - it inherits the same formatting."
+    "Keep entries a single unbroken run with no blank rows in between, or the dropdown "
+    "cuts short at the gap. 500 rows are ready to use; if you ever fill all of them, "
+    "right-click a row number in this list and choose Insert to add more - it inherits "
+    "the same formatting."
 ))
 gs_instr.font = TITLE_FONT
 gs_instr.alignment = Alignment(horizontal="left", vertical="top", wrap_text=True)
@@ -261,12 +324,15 @@ for i in range(GS_ROW_COUNT):
 
 gs.column_dimensions["A"].width = 34
 add_table(gs, "tbl_GameSections", f"A{GS_HEADER_ROW}:A{GS_LAST_DATA_ROW}")
-gs.freeze_panes = f"A{GS_FIRST_DATA_ROW}"
+# No freeze_panes: it would split this Table's header row from its data body
+# into two Excel panes, which breaks NVDA's table-region tracking across that
+# boundary (announces "out of table" crossing it) - see the matching note on
+# the log tabs above and the Excel/openpyxl traps section in CLAUDE.md.
 protect_sheet(gs)
 
 wb.defined_names["GameSections"] = DefinedName(
     "GameSections",
-    attr_text=f"'Game Sections'!$A${GS_FIRST_DATA_ROW}:$A${GS_LAST_DATA_ROW}",
+    attr_text=dynamic_list_ref("Game Sections", "A", GS_FIRST_DATA_ROW, GS_LAST_DATA_ROW),
 )
 
 # ===========================================================================
@@ -315,12 +381,14 @@ for i in range(SEVERITY_ROW_COUNT):
 sev.column_dimensions["A"].width = 18
 sev.column_dimensions["B"].width = 52
 add_table(sev, "tbl_SeverityScale", f"A{SEV_HEADER_ROW}:B{SEV_LAST_DATA_ROW}")
-sev.freeze_panes = f"A{SEV_FIRST_DATA_ROW}"
+# No freeze_panes here either, same reason as Game Sections above - it would
+# split this Table's header row from its data body into two Excel panes and
+# break NVDA's table-region tracking across that boundary.
 # NOTE: no protect_sheet() here - this tab stays completely unlocked by design.
 
 wb.defined_names["SeverityLevels"] = DefinedName(
     "SeverityLevels",
-    attr_text=f"'Severity Scale'!$A${SEV_FIRST_DATA_ROW}:$A${SEV_LAST_DATA_ROW}",
+    attr_text=dynamic_list_ref("Severity Scale", "A", SEV_FIRST_DATA_ROW, SEV_LAST_DATA_ROW),
 )
 
 # ===========================================================================
@@ -366,8 +434,13 @@ for sheet_name, cfg in SHEET_CONFIG.items():
         ws.column_dimensions[get_column_letter(idx)].width = width
 
     ws.row_dimensions[1].height = 30
-    ws.freeze_panes = "A2"
-
+    # No freeze_panes here on purpose: freezing row 1 puts the Table's header
+    # row and its data body in two different Excel panes. NVDA's table-region
+    # tracking is scoped per pane, so arrowing across that boundary makes it
+    # announce "out of table" even though it's the same Table. Excel Tables
+    # already show a floating header when scrolled past, so freezing isn't
+    # needed for header visibility. User-reported bug, live NVDA repro
+    # 2026-09-04: focus in header row, arrow Down into first data row.
     for r in range(FIRST_DATA_ROW, LAST_DATA_ROW + 1):
         # Issue ID only appears once a Game Section is chosen for this row -
         # keeps unused rows genuinely blank for screen-reader/table navigation.

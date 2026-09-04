@@ -54,9 +54,9 @@ If you're picking this up for the first time with a screen reader, here's how it
 
 The workbook has 8 tabs across the bottom: Setup, Game Sections, Severity Scale, Visual, Screen Reader, Keyboard, Controller, and Summary. Move between them with **Ctrl+Page Down** and **Ctrl+Page Up**.
 
-Every tab is a plain grid: no merged cells, no floating boxes, so arrow keys move exactly one cell at a time and always land where you expect. The four log tabs (Visual, Screen Reader, Keyboard, Controller) and the Summary tab are all built as real Excel Tables, so your screen reader announces the column header every time you move to a new cell in that column. You don't need to count columns or remember what you're filling in as you go.
+Every tab is a plain grid: no merged cells, no floating boxes, so arrow keys move exactly one cell at a time and always land where you expect. Every data grid in this workbook - the four log tabs (Visual, Screen Reader, Keyboard, Controller), the Dropdown Lists and Game Info areas on Setup, Game Sections, Severity Scale, and Summary - is built as a real Excel Table, so your screen reader announces the column header every time you move to a new cell in that column. You don't need to count columns or remember what you're filling in as you go.
 
-On the four log tabs (Visual, Screen Reader, Keyboard, Controller), row 1 holds the column headers and is frozen, so your data starts on row 2. The other tabs (Setup, Game Sections, Severity Scale, Summary) lead with a row or two of instructions before their actual headers, since there's more to explain up front on those.
+On the four log tabs (Visual, Screen Reader, Keyboard, Controller), row 1 holds the column headers and your data starts on row 2. Game Sections and Severity Scale work the same way, just with a short instructions block above their own header row. Setup and Summary lead with a row or two of instructions before their actual headers, since there's more to explain up front on those - and those two are the only tabs that freeze that top instructions row in place while you scroll.
 
 ### Keyboard shortcuts you'll actually use here
 
@@ -65,7 +65,7 @@ These are standard Excel shortcuts, not anything specific to this template, but 
 | Shortcut | What it does |
 | --- | --- |
 | Ctrl+Page Down / Ctrl+Page Up | Move to the next / previous tab |
-| Ctrl+Home | Jump to the top of the sheet. Every tab here has its top row or two frozen (headers on the log tabs, instructions elsewhere), so this actually lands you just below whatever's frozen, not literal row 1 |
+| Ctrl+Home | Jump to the top of the sheet. On Setup and Summary this lands you just below their frozen top instructions row. Everywhere else (the four log tabs, Game Sections, Severity Scale) nothing is frozen, so it lands on literal row 1, the column header row - press Down Arrow once to reach the first data row |
 | Arrow keys | Move one cell at a time |
 | Tab / Shift+Tab | Move one cell right / left |
 | Enter / Shift+Enter | Move one cell down / up |
@@ -77,12 +77,16 @@ These are standard Excel shortcuts, not anything specific to this template, but 
 
 Don't press F2 to open a dropdown. It switches the cell into text-edit mode, where the arrow keys stop moving through the list. Alt+Down Arrow is the one that works. This is standard Excel behavior, not something specific to this template.
 
+**A known NVDA/Excel bug can leave focus stuck after picking a dropdown option.** After you press Enter to choose an item, focus can occasionally get stuck, with tabbing out of the Excel window and back in as the only way to recover. This is a longstanding issue in how NVDA and Excel talk to each other ([nvaccess/nvda#13850](https://github.com/nvaccess/nvda/issues/13850), [#13426](https://github.com/nvaccess/nvda/issues/13426)), not something in this workbook. If you hit it, try toggling "Use UI Automation to access Microsoft Excel spreadsheet controls" in NVDA's Preferences > Settings > Advanced menu - whichever state you flip it to (on if it's off, off if it's on) clears it for most people, depending on your Excel/NVDA version.
+
+The Dropdown Lists grid on the Setup tab (Status, Platform, and so on) is a real Excel Table too, same as the four log tabs, so it announces its column headers the same automatic way as you move down it - no extra setup needed there either.
+
 A heads-up on two shortcuts that don't behave the way you'd expect here: **Ctrl+End** and **Ctrl+Arrow key** normally jump to the last used cell or the edge of your data. But since each log tab is a pre-built 2,000-row table, both of them jump to the edge of the whole table instead of to your last logged row. The reliable way to find your last entry is to move down column C (Game Section) from the top until you hit a blank cell.
 
 ### Logging your first issue
 
 1. From wherever you are, Ctrl+Page Down until you reach the tab that matches what you're testing: Visual, Screen Reader, Keyboard, or Controller.
-2. Ctrl+Home to jump straight to row 2, the first data row (row 1 is frozen out of the way). If you've already logged issues on this tab, arrow down until you reach a blank row.
+2. Ctrl+Home to jump to row 1, the column header row, then Down Arrow once to reach row 2, the first data row. If you've already logged issues on this tab, keep arrowing down until you reach a blank row.
 3. Move to the Game Section column and press Alt+Down Arrow to pick from the list.
 4. Tab across the row, filling in Error Type, Actual Behavior, Expected Behavior, and Steps to Reproduce as you go. The dropdown columns (Error Type, Severity, Platform, Input Method, Screen Reader Used, Status) all open the same way: Alt+Down Arrow, arrow keys, Enter.
 5. As soon as you pick a Game Section, the Issue ID cell at the start of the row fills itself in (V-001 for your first entry on Visual, V-002 for your second, and so on), so you'll hear it change from blank to a real ID.
@@ -116,6 +120,8 @@ The Severity Scale tab is the one exception: the whole tab ships fully unlocked,
 - **LibreOffice and Google Sheets are untested.** Everything here has only been verified in Microsoft Excel. Dropdown validation and Table behavior can work differently in other spreadsheet apps, so I can't say yet whether this holds up there. If you try it, I'd like to know (see Contributing below).
 - **The pre-built rows have a limit.** Each log tab ships with 2,000 rows and each dropdown list has some room to grow, but if you ever fill all of them, you'll need to unprotect the sheet first before inserting more (see Sheet protection above).
 - **Custom tab names have to match exactly.** If you add a custom log tab and list it on the Summary tab, the name you type there has to match the actual tab name exactly, apostrophes and all, or it'll show "Check tab name" instead of a count.
+- **A dropdown could open scrolled to the bottom instead of the top - fixed.** Every dropdown source list here reserves blank rows below its seed values so you can add your own entries later. Those trailing blanks used to make Excel's dropdown open already scrolled to the bottom on an empty cell (Excel matches a blank cell to the first blank entry in its source list, which sat at the end) - a real Excel behavior, not NVDA-specific. The dropdown source ranges now trim off their own unused rows, so this no longer happens. This does mean an entry deleted from the *middle* of a dropdown list (rather than typed over) can cut off whatever comes after it in the dropdown - keep entries as a single unbroken run starting at the first data row, as the on-sheet instructions already say.
+- **Some NVDA users still hit a post-selection focus issue.** A tester reported NVDA occasionally getting stuck after choosing a dropdown option. This traces back to a known bug in NVDA's Excel support, not this workbook - see the NVDA/Excel bug note under Using This With a Screen Reader above for the workaround.
 
 ## Contributing
 
