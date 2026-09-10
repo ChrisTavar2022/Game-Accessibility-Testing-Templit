@@ -47,6 +47,22 @@ Tested in Microsoft Excel 365. Not yet tested in LibreOffice Calc or Google Shee
 
 If you're using a screen reader, see Using This With a Screen Reader below for the exact keystrokes and a walkthrough of logging your first issue.
 
+## Checking for Updates
+
+Once you've been using this for a while, your copy has your own logged issues in it, so you shouldn't just grab whatever's newest off GitHub and overwrite your file. `check_for_updates.py` handles this safely: it checks GitHub for a newer release, and if one exists, downloads it as a **separate, new file** next to yours. Your existing file is never touched, edited, or overwritten.
+
+1. Make sure you have Python 3 installed (the same requirement as `rebuild_template.py` - this project's other script).
+2. Download `check_for_updates.py` into the same folder as your workbook.
+3. Run it:
+   ```
+   python check_for_updates.py
+   ```
+4. If a newer version exists, it downloads to a file like `Game Accessibility Testing templit (v1.1.0).xlsx` in that same folder. Open both files and copy your logged issues, Game/Mod Information, Game Sections, and Severity Scale entries over into the new one, then delete or archive the old one once you've confirmed everything moved over.
+
+If your workbook lives somewhere else, point the script at it: `python check_for_updates.py --template-path "C:\path\to\your\file.xlsx"`.
+
+No pip installs needed - it only uses Python's standard library, and works the same way on Windows, macOS, and Linux.
+
 ## Using This With a Screen Reader
 
 If you're picking this up for the first time with a screen reader, here's how it's laid out and how to move around it.

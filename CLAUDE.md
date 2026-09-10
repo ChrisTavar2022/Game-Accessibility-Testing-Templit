@@ -1,6 +1,6 @@
 # Game Accessibility Testing Template — Project Context
 
-Context for Claude Code sessions in this folder. Last updated 2026-09-04.
+Context for Claude Code sessions in this folder. Last updated 2026-09-10.
 
 ## What this is
 
@@ -22,6 +22,7 @@ Accessibility Templits\              <- working dir (parent, not the repo)
     ├── CLAUDE.md                        <- tracked, committed, published
     ├── Game Accessibility Testing templit.xlsx
     ├── rebuild_template.py
+    ├── check_for_updates.py
     ├── README.md
     └── LICENSE
 ```
@@ -33,6 +34,7 @@ guidance still stands even though `CLAUDE.md` itself is now an intentional excep
 | --- | --- |
 | `rebuild_template.py` | **Source of truth.** Generates the entire workbook. Now inside the repo, so it ships publicly — that's what lets contributors propose changes as readable diffs instead of binary spreadsheets. |
 | `Game Accessibility Testing templit.xlsx` | Generated output. Do not hand-edit — regenerate instead. |
+| `check_for_updates.py` | Added 2026-09-10. Stdlib-only Python script, shipped for *end users* (testers), not just contributors — checks GitHub Releases against the version stamped in a local `.xlsx` and, if newer, downloads the new one as a separate file. See "Versioning and the update checker" below. |
 | `...\README.md` | Finished and published. Fully written (collaboratively), no placeholder brackets or guidance comments remain. |
 | `...\LICENSE` | CC BY 4.0, downloaded verbatim from Creative Commons. Do not regenerate from memory. |
 
@@ -63,12 +65,17 @@ script output again.
 
 ## Workbook structure
 
-8 sheets: `Setup`, `Game Sections`, `Severity Scale`, `Visual`, `Screen Reader`,
-`Keyboard`, `Controller`, `Summary`.
+9 sheets: `Setup`, `Game Sections`, `Severity Scale`, `Visual`, `Screen Reader`,
+`Keyboard`, `Controller`, `Gameplay`, `Summary`. `Gameplay` was added 2026-09-10 for
+flow/friction/regression issues (task order confusion, softlocks, missing save/pause
+points, difficulty spikes, tutorial gaps) — see "Where we left off" below. Its Error
+Type list (`GameplayErrorTypes`) is original wording informed by, but not copied from,
+the ESA's Accessible Games Initiative (announced March 2025) Gameplay tag category —
+same non-copyrighted-wording approach as the WCAG/GAG guidance below.
 
-The four log tabs share one 14-column layout and 2,000 pre-built rows. Dropdowns are
-driven by 10 workbook-scoped named ranges (`GameSections`, `SeverityLevels`,
-`StatusList`, `PlatformList`, `InputMethodList`, `ScreenReaderList`, and four
+The five log tabs share one 14-column layout and 2,000 pre-built rows. Dropdowns are
+driven by 11 workbook-scoped named ranges (`GameSections`, `SeverityLevels`,
+`StatusList`, `PlatformList`, `InputMethodList`, `ScreenReaderList`, and five
 `*ErrorTypes`).
 
 ## Design decisions and why
@@ -203,6 +210,46 @@ Always `Close($false)` so test data never lands in the real file, and always `Qu
 a `finally` block to avoid orphan Excel processes. PowerShell here is 5.1 — no `&&`, no
 ternary.
 
+## Versioning and the update checker
+
+Added 2026-09-10. Testers' local copies accumulate their own logged issues over time, so
+an updater that just overwrote their file with the latest GitHub version would destroy
+their data — that risk shaped this whole design.
+
+- **`TEMPLATE_VERSION`** in `rebuild_template.py` (currently `"1.0.0"`) is stamped into
+  the workbook as the OOXML core property `cp:version` (`wb.properties.version`).
+  Confirmed via COM that Excel opens the file fine with this set (Excel just doesn't
+  surface it anywhere in its own UI — that's expected, not a bug).
+- **`check_for_updates.py`** is a stdlib-only Python script (no pip installs — `zipfile`,
+  `xml.etree.ElementTree`, `urllib.request`, `json`) so it runs identically on Windows,
+  macOS, and Linux. It reads a local `.xlsx`'s `docProps/core.xml` directly (no openpyxl
+  dependency needed for that), compares it against the latest GitHub Release tag via the
+  public `.../releases/latest` API endpoint, and — if newer — downloads that release's
+  `.xlsx` asset to a **new** file (`Game Accessibility Testing templit (vX.Y.Z).xlsx`)
+  next to the local one. It never overwrites, edits, or deletes the user's existing file.
+  Chose PowerShell first, then switched to Python once the user asked for macOS/Linux
+  support — Windows PowerShell 5.1 doesn't exist on those platforms, and requiring
+  PowerShell 7 (`pwsh`) as an extra install for non-Windows testers was worse than just
+  using Python, which this repo already requires for `rebuild_template.py`.
+- Version comparison (`is_older()`) parses each version as a tuple of ints and compares
+  numerically (`1.2.0 < 1.10.0`), not as strings — a plain string compare would get that
+  backwards. Falls back to a not-equal check for non-numeric version strings, treating
+  "unrecognized" as "needs updating" rather than silently skipping it.
+- Tested end-to-end this session (temp copies, not the real repo file): missing local
+  file, no GitHub releases yet (real repo — currently true), a release with no `.xlsx`
+  asset attached, a fabricated release + real download to a new file with the original
+  left untouched, and the already-up-to-date case. All passed.
+- **The release process going forward:** bump `TEMPLATE_VERSION` in
+  `rebuild_template.py`, rebuild, commit, then create a matching GitHub Release (tag
+  `vX.Y.Z`) with the rebuilt `.xlsx` attached as a release asset. Skipping the attached
+  `.xlsx` means `check_for_updates.py` finds the release but has nothing to download (it
+  handles this gracefully — points the user at the release page instead of failing).
+- **Not yet usable end-to-end for real users**: no GitHub Release has been published yet
+  (confirmed live against the real repo — the script correctly reports "No releases have
+  been published yet"). The first release (`v1.0.0`, matching the current
+  `TEMPLATE_VERSION`) still needs to be cut before this feature does anything for anyone
+  who isn't testing it locally. See "Where we left off" below.
+
 ## Status
 
 **Published.** Live at https://github.com/ChrisTavar2022/Game-Accessibility-Testing-Templit
@@ -215,6 +262,26 @@ just XML-flag reads), idempotency (byte-identical rebuilds except the modified
 timestamp), and README/workbook consistency (the on-sheet instructional text and the
 README were reconciled after they were found to contradict each other on where
 WCAG/GAG terminology belongs — see Design decisions above).
+
+## Where we left off (2026-09-10)
+
+Two things landed this session, on top of everything from 2026-09-05 below (all of
+which is still open/unconfirmed exactly as described there — nothing below changes it):
+
+1. **Added the `Gameplay` tab**, committed locally as `eb67b9b` (not yet pushed —
+   `git status` shows "ahead of origin/master by 1 commit"). Fifth log tab, same
+   14-column format as the other four. See "Workbook structure" above for what it
+   covers and the sourcing note on its Error Type list. Verified via COM: table
+   structure, dropdown wiring, Issue ID generation (`GP-001`), Summary COUNTIFS
+   picking up test rows correctly, and rebuild idempotency (only
+   `docProps/core.xml`'s modified timestamp differs between runs, same as before).
+2. **Added `check_for_updates.py` and the `TEMPLATE_VERSION`/`cp:version` scheme**
+   (not yet committed as of this note — `rebuild_template.py`, `README.md`, and the
+   rebuilt `.xlsx` all have unstaged changes, and `check_for_updates.py` itself is
+   untracked). See "Versioning and the update checker" above for the full design and
+   why it never overwrites a user's file. Still needs: committing this session's
+   changes, pushing both commits, and cutting the actual `v1.0.0` GitHub Release with
+   the `.xlsx` attached — none of that has happened yet.
 
 ## Where we left off (2026-09-05)
 
@@ -294,8 +361,14 @@ against the script only, not the `.xlsx`, since binary files don't diff/merge in
 issues for everything else). LibreOffice/Google Sheets compatibility remains untested
 and unclaimed, which is a deliberate honesty choice, not a gap to fill before shipping.
 
-New as of 2026-09-04: see "Where we left off" above for the open tester-feedback items
-(dropdown focus-at-bottom, possible keyboard trap, NVDA+Shift+C/R documentation tip).
+New as of 2026-09-04: see "Where we left off (2026-09-05)" below for the open
+tester-feedback items (dropdown focus-at-bottom, possible keyboard trap, NVDA+Shift+C/R
+documentation tip).
+
+New as of 2026-09-10: commit and push this session's changes (Gameplay tab +
+update-checker), then cut the `v1.0.0` GitHub Release with the `.xlsx` attached — see
+"Where we left off (2026-09-10)" above. Without that release, `check_for_updates.py`
+is shipped but functionally inert for real users.
 
 ## Working preferences
 

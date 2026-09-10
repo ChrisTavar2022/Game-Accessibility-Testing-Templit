@@ -12,6 +12,12 @@ from openpyxl.utils import get_column_letter
 
 SRC = r"Game Accessibility Testing templit.xlsx"
 AUTHOR_NAME = "Christopher Tavarez"
+# Bump this on every change meant to ship as a new release. Stamped into the
+# workbook's core.xml (cp:version) so check_for_updates.ps1 can read a user's
+# local file and compare it against the latest GitHub Release tag without
+# needing anything outside the .xlsx itself. Keep this in sync with the git
+# tag / GitHub Release version (e.g. "1.0.0" here <-> tag "v1.0.0").
+TEMPLATE_VERSION = "1.0.0"
 
 wb = openpyxl.load_workbook(SRC)
 # Names from superseded designs; harmless if absent.
@@ -687,6 +693,7 @@ wb.active = 0
 wb.properties.creator = AUTHOR_NAME
 wb.properties.lastModifiedBy = AUTHOR_NAME
 wb.properties.title = "Game Accessibility Testing Template"
+wb.properties.version = TEMPLATE_VERSION
 wb.properties.description = None
 wb.properties.keywords = None
 wb.properties.category = None
