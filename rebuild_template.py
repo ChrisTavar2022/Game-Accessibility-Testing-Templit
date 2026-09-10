@@ -154,7 +154,7 @@ row_cursor = write_instructions(setup, [
     "How to Use This Workbook",
     "1. Fill in your game/mod info in the table further down this sheet.",
     "2. Go to the 'Game Sections' tab and list every section/component of your game (Title Screen, Gameplay, Pause Menu, etc.) - the Game Section dropdown on every log tab updates automatically as you add rows there. Add 3 or 30 - there's no limit.",
-    "3. Log one issue per row in the Visual, Screen Reader, Keyboard, and Controller tabs. Free-type the description fields; use the dropdowns for Game Section, Error Type, Severity, Platform, Input Method, Screen Reader Used, and Status. The Error Type lists below are yours to edit - for example, swap in terminology from a framework like WCAG or the Game Accessibility Guidelines, since those categorize the kind of issue rather than how severe it is.",
+    "3. Log one issue per row in the Visual, Screen Reader, Keyboard, Controller, and Gameplay tabs. Free-type the description fields; use the dropdowns for Game Section, Error Type, Severity, Platform, Input Method, Screen Reader Used, and Status. The Error Type lists below are yours to edit - for example, swap in terminology from a framework like WCAG or the Game Accessibility Guidelines, since those categorize the kind of issue rather than how severe it is.",
     "4. NVDA/JAWS tip: to choose from a dropdown cell, select the cell but do NOT press F2. Press Alt+Down Arrow to open its list, use Up/Down Arrow to move through the options, then Enter to select. F2 switches to text-editing mode, where Up/Down Arrow won't respond to the list - if that happens, press Escape first, then use Alt+Down Arrow instead.",
     "5. Known NVDA/Excel bug: after you press Enter to pick a dropdown option, focus can occasionally get stuck (Tab out of the Excel window and back in to recover). This is a longstanding NVDA/Excel interaction issue, not something this workbook causes or can fix. If you hit it, try toggling \"Use UI Automation to access Microsoft Excel spreadsheet controls\" in NVDA's Preferences > Settings > Advanced - flipping it (on if it's off, off if it's on) resolves this for most people, depending on your Excel/NVDA version.",
     "6. The Dropdown Lists grid below (Status, Platform, etc.) is a real Excel Table, just like the log tabs, so your screen reader announces each column's header automatically as you move down it - no setup needed.",
@@ -236,6 +236,17 @@ lists = {
         "Button Not Mapped", "No Remap / Rebind Option", "Prompt / Glyph Mismatch",
         "Vibration / Haptic Issue", "Input Not Recognized", "Other",
     ], 15),
+    # Informed by the Entertainment Software Association's Accessible Games
+    # Initiative (announced March 2025), specifically its "Gameplay" tag
+    # category (e.g. Difficulty Levels, Save Anytime, Pausable, On-Demand
+    # Tutorials) - generic concepts only, not the initiative's own wording,
+    # broadened to cover task-flow friction and regressions generally.
+    "I": ("Gameplay Error Types", [
+        "Confusing Task Order / Flow", "Unclear Objective / Goal",
+        "Unexpected Regression (previously working)", "Progress Blocked / Softlock",
+        "No Save Point Available", "Cannot Pause When Needed",
+        "Difficulty Spike / Imbalance", "Tutorial / Onboarding Gap", "Other",
+    ], 15),
 }
 
 named_range_targets = {}
@@ -267,10 +278,10 @@ STATUS_ROW_COUNT = lists["A"][2]
 # reverse-engineered into a defined name, but didn't survive closing and reopening
 # the file - live-tested 2026-09-05 and confirmed not to work. This Table approach
 # reuses a mechanism already verified working elsewhere in this same workbook.)
-# All 8 lists share one row_count (see above) so this range is a clean rectangle.
-add_table(setup, "tbl_DropdownLists", f"A{LIST_HEADER_ROW}:H{LIST_HEADER_ROW + 15}")
+# All 9 lists share one row_count (see above) so this range is a clean rectangle.
+add_table(setup, "tbl_DropdownLists", f"A{LIST_HEADER_ROW}:I{LIST_HEADER_ROW + 15}")
 
-for col, w in {"A": 26, "B": 20, "C": 24, "D": 20, "E": 26, "F": 28, "G": 26, "H": 24}.items():
+for col, w in {"A": 26, "B": 20, "C": 24, "D": 20, "E": 26, "F": 28, "G": 26, "H": 24, "I": 30}.items():
     setup.column_dimensions[col].width = w
 setup.freeze_panes = "A2"
 protect_sheet(setup)
@@ -284,6 +295,7 @@ for defined_name, title in {
     "ScreenReaderErrorTypes": "Screen Reader Error Types",
     "KeyboardErrorTypes": "Keyboard Error Types",
     "ControllerErrorTypes": "Controller Error Types",
+    "GameplayErrorTypes": "Gameplay Error Types",
 }.items():
     wb.defined_names[defined_name] = DefinedName(
         defined_name, attr_text=named_range_targets[title]
@@ -418,6 +430,7 @@ SHEET_CONFIG = {
     "Screen Reader": {"prefix": "SR", "error_type_range": "ScreenReaderErrorTypes"},
     "Keyboard": {"prefix": "KB", "error_type_range": "KeyboardErrorTypes"},
     "Controller": {"prefix": "C", "error_type_range": "ControllerErrorTypes"},
+    "Gameplay": {"prefix": "GP", "error_type_range": "GameplayErrorTypes"},
 }
 
 for sheet_name, cfg in SHEET_CONFIG.items():
@@ -511,8 +524,8 @@ status_last_row = status_header_row + STATUS_ROW_COUNT
 
 tab_title_row = status_last_row + 2
 tab_header_row = tab_title_row + 1
-TAB_NAME_SEED = ["Visual", "Screen Reader", "Keyboard", "Controller"]
-TAB_ROW_COUNT = 20  # 4 seeded + growth room for custom tabs
+TAB_NAME_SEED = ["Visual", "Screen Reader", "Keyboard", "Controller", "Gameplay"]
+TAB_ROW_COUNT = 20  # 5 seeded + growth room for custom tabs
 tab_first_row = tab_header_row + 1
 tab_last_row = tab_header_row + TAB_ROW_COUNT
 
@@ -664,7 +677,7 @@ protect_sheet(summary)
 # 6. Sheet order
 # ===========================================================================
 order = ["Setup", "Game Sections", "Severity Scale",
-         "Visual", "Screen Reader", "Keyboard", "Controller", "Summary"]
+         "Visual", "Screen Reader", "Keyboard", "Controller", "Gameplay", "Summary"]
 wb._sheets = [wb[name] for name in order]
 wb.active = 0
 

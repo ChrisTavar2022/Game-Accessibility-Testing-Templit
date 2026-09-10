@@ -12,13 +12,14 @@ It's for anyone who wants a single, organized log instead of scattered notes. It
 
 | Tab | What it's for |
 | --- | --- |
-| **Setup** | Game/mod info, plus every dropdown list the rest of the workbook uses (Status, Platform, Input Method, Screen Reader Used, and the four Error Type lists). |
-| **Game Sections** | Every part of your game or mod being tested, one per row. Feeds the Game Section dropdown on all four log tabs. |
+| **Setup** | Game/mod info, plus every dropdown list the rest of the workbook uses (Status, Platform, Input Method, Screen Reader Used, and the five Error Type lists). |
+| **Game Sections** | Every part of your game or mod being tested, one per row. Feeds the Game Section dropdown on all five log tabs. |
 | **Severity Scale** | Ships with a basic 1 through 5 scale (Cosmetic through Blocking) that's fully unlocked. Rename it, extend it, or replace it outright. |
 | **Visual** | Log visual accessibility issues: color, contrast, text scaling, missing visual feedback, and so on. |
 | **Screen Reader** | Log issues found while testing with a screen reader: missing labels, bad reading order, silent interactions, and the like. |
 | **Keyboard** | Log keyboard-only accessibility issues: focus, tab order, remapping, shortcut conflicts. |
 | **Controller** | Log controller-specific issues: button mapping, remapping, prompt/glyph mismatches, haptics. |
+| **Gameplay** | Log flow and pacing issues: confusing task order, unclear objectives, softlocks, missing save/pause points, difficulty spikes, tutorial gaps, and regressions where something that used to work no longer does. |
 | **Summary** | Auto-updating totals for everything you log, by severity, by status, and by tab. |
 
 ## Accessibility Design
@@ -39,7 +40,7 @@ I tested this directly with NVDA and Narrator on Windows. The dropdowns, Tables,
 2. Open it in Excel and fill in your game/mod details on the **Setup** tab.
 3. List your game's components (levels, menus, systems, whatever fits your project) on the **Game Sections** tab, one per row.
 4. Check the **Severity Scale** tab. It ships with a basic 1 through 5 scale, but it's fully unlocked, so rename or extend the levels any time.
-5. Start logging issues on whichever tab matches the issue type: **Visual**, **Screen Reader**, **Keyboard**, or **Controller**.
+5. Start logging issues on whichever tab matches the issue type: **Visual**, **Screen Reader**, **Keyboard**, **Controller**, or **Gameplay**.
 6. Check the **Summary** tab any time for a running count of issues by tab and severity.
 
 Tested in Microsoft Excel 365. Not yet tested in LibreOffice Calc or Google Sheets. Dropdown validation and Table behavior may not carry over exactly. If you try it there, I'd genuinely like to hear how it goes (see Contributing below).
@@ -52,11 +53,11 @@ If you're picking this up for the first time with a screen reader, here's how it
 
 ### Layout at a glance
 
-The workbook has 8 tabs across the bottom: Setup, Game Sections, Severity Scale, Visual, Screen Reader, Keyboard, Controller, and Summary. Move between them with **Ctrl+Page Down** and **Ctrl+Page Up**.
+The workbook has 9 tabs across the bottom: Setup, Game Sections, Severity Scale, Visual, Screen Reader, Keyboard, Controller, Gameplay, and Summary. Move between them with **Ctrl+Page Down** and **Ctrl+Page Up**.
 
-Every tab is a plain grid: no merged cells, no floating boxes, so arrow keys move exactly one cell at a time and always land where you expect. Every data grid in this workbook - the four log tabs (Visual, Screen Reader, Keyboard, Controller), the Dropdown Lists and Game Info areas on Setup, Game Sections, Severity Scale, and Summary - is built as a real Excel Table, so your screen reader announces the column header every time you move to a new cell in that column. You don't need to count columns or remember what you're filling in as you go.
+Every tab is a plain grid: no merged cells, no floating boxes, so arrow keys move exactly one cell at a time and always land where you expect. Every data grid in this workbook - the five log tabs (Visual, Screen Reader, Keyboard, Controller, Gameplay), the Dropdown Lists and Game Info areas on Setup, Game Sections, Severity Scale, and Summary - is built as a real Excel Table, so your screen reader announces the column header every time you move to a new cell in that column. You don't need to count columns or remember what you're filling in as you go.
 
-On the four log tabs (Visual, Screen Reader, Keyboard, Controller), row 1 holds the column headers and your data starts on row 2. Game Sections and Severity Scale work the same way, just with a short instructions block above their own header row. Setup and Summary lead with a row or two of instructions before their actual headers, since there's more to explain up front on those - and those two are the only tabs that freeze that top instructions row in place while you scroll.
+On the five log tabs (Visual, Screen Reader, Keyboard, Controller, Gameplay), row 1 holds the column headers and your data starts on row 2. Game Sections and Severity Scale work the same way, just with a short instructions block above their own header row. Setup and Summary lead with a row or two of instructions before their actual headers, since there's more to explain up front on those - and those two are the only tabs that freeze that top instructions row in place while you scroll.
 
 ### Keyboard shortcuts you'll actually use here
 
@@ -65,7 +66,7 @@ These are standard Excel shortcuts, not anything specific to this template, but 
 | Shortcut | What it does |
 | --- | --- |
 | Ctrl+Page Down / Ctrl+Page Up | Move to the next / previous tab |
-| Ctrl+Home | Jump to the top of the sheet. On Setup and Summary this lands you just below their frozen top instructions row. Everywhere else (the four log tabs, Game Sections, Severity Scale) nothing is frozen, so it lands on literal row 1, the column header row - press Down Arrow once to reach the first data row |
+| Ctrl+Home | Jump to the top of the sheet. On Setup and Summary this lands you just below their frozen top instructions row. Everywhere else (the five log tabs, Game Sections, Severity Scale) nothing is frozen, so it lands on literal row 1, the column header row - press Down Arrow once to reach the first data row |
 | Arrow keys | Move one cell at a time |
 | Tab / Shift+Tab | Move one cell right / left |
 | Enter / Shift+Enter | Move one cell down / up |
@@ -79,13 +80,13 @@ Don't press F2 to open a dropdown. It switches the cell into text-edit mode, whe
 
 **A known NVDA/Excel bug can leave focus stuck after picking a dropdown option.** After you press Enter to choose an item, focus can occasionally get stuck, with tabbing out of the Excel window and back in as the only way to recover. This is a longstanding issue in how NVDA and Excel talk to each other ([nvaccess/nvda#13850](https://github.com/nvaccess/nvda/issues/13850), [#13426](https://github.com/nvaccess/nvda/issues/13426)), not something in this workbook. If you hit it, try toggling "Use UI Automation to access Microsoft Excel spreadsheet controls" in NVDA's Preferences > Settings > Advanced menu - whichever state you flip it to (on if it's off, off if it's on) clears it for most people, depending on your Excel/NVDA version.
 
-The Dropdown Lists grid on the Setup tab (Status, Platform, and so on) is a real Excel Table too, same as the four log tabs, so it announces its column headers the same automatic way as you move down it - no extra setup needed there either.
+The Dropdown Lists grid on the Setup tab (Status, Platform, and so on) is a real Excel Table too, same as the five log tabs, so it announces its column headers the same automatic way as you move down it - no extra setup needed there either.
 
 A heads-up on two shortcuts that don't behave the way you'd expect here: **Ctrl+End** and **Ctrl+Arrow key** normally jump to the last used cell or the edge of your data. But since each log tab is a pre-built 2,000-row table, both of them jump to the edge of the whole table instead of to your last logged row. The reliable way to find your last entry is to move down column C (Game Section) from the top until you hit a blank cell.
 
 ### Logging your first issue
 
-1. From wherever you are, Ctrl+Page Down until you reach the tab that matches what you're testing: Visual, Screen Reader, Keyboard, or Controller.
+1. From wherever you are, Ctrl+Page Down until you reach the tab that matches what you're testing: Visual, Screen Reader, Keyboard, Controller, or Gameplay.
 2. Ctrl+Home to jump to row 1, the column header row, then Down Arrow once to reach row 2, the first data row. If you've already logged issues on this tab, keep arrowing down until you reach a blank row.
 3. Move to the Game Section column and press Alt+Down Arrow to pick from the list.
 4. Tab across the row, filling in Error Type, Actual Behavior, Expected Behavior, and Steps to Reproduce as you go. The dropdown columns (Error Type, Severity, Platform, Input Method, Screen Reader Used, Status) all open the same way: Alt+Down Arrow, arrow keys, Enter.
