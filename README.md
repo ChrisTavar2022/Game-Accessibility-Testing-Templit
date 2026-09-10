@@ -156,6 +156,8 @@ Built by Christopher Tavarez, with Claude's help designing the formulas, dropdow
 
 [github.com/ChrisTavar2022](https://github.com/ChrisTavar2022)
 
+Additional thanks to [Ross Minor](https://github.com/RossMinor) for testing and suggestions.
+
 Thanks to anyone who sends in fixes, testing results, or feedback. I'll add names here as that happens.
 
 ## License
