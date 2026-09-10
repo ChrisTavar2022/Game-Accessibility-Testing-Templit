@@ -244,11 +244,12 @@ their data — that risk shaped this whole design.
   `vX.Y.Z`) with the rebuilt `.xlsx` attached as a release asset. Skipping the attached
   `.xlsx` means `check_for_updates.py` finds the release but has nothing to download (it
   handles this gracefully — points the user at the release page instead of failing).
-- **Not yet usable end-to-end for real users**: no GitHub Release has been published yet
-  (confirmed live against the real repo — the script correctly reports "No releases have
-  been published yet"). The first release (`v1.0.0`, matching the current
-  `TEMPLATE_VERSION`) still needs to be cut before this feature does anything for anyone
-  who isn't testing it locally. See "Where we left off" below.
+- **Live and confirmed working end-to-end.** `v1.0.0` was pushed and released (tag +
+  `.xlsx` attached as a release asset) on 2026-09-10. Ran `check_for_updates.py` against
+  the real repo afterward: it correctly reports "You're already on the latest version."
+  Future releases just need `TEMPLATE_VERSION` bumped, a rebuild, and a matching
+  `gh release create vX.Y.Z "Game Accessibility Testing templit.xlsx" ...` (or the
+  GitHub web UI) with the new `.xlsx` attached.
 
 ## Status
 
@@ -275,13 +276,15 @@ which is still open/unconfirmed exactly as described there — nothing below cha
    structure, dropdown wiring, Issue ID generation (`GP-001`), Summary COUNTIFS
    picking up test rows correctly, and rebuild idempotency (only
    `docProps/core.xml`'s modified timestamp differs between runs, same as before).
-2. **Added `check_for_updates.py` and the `TEMPLATE_VERSION`/`cp:version` scheme**
-   (not yet committed as of this note — `rebuild_template.py`, `README.md`, and the
-   rebuilt `.xlsx` all have unstaged changes, and `check_for_updates.py` itself is
-   untracked). See "Versioning and the update checker" above for the full design and
-   why it never overwrites a user's file. Still needs: committing this session's
-   changes, pushing both commits, and cutting the actual `v1.0.0` GitHub Release with
-   the `.xlsx` attached — none of that has happened yet.
+2. **Added `check_for_updates.py` and the `TEMPLATE_VERSION`/`cp:version` scheme**,
+   committed as `6daddd9`. See "Versioning and the update checker" above for the full
+   design and why it never overwrites a user's file.
+
+Both commits pushed to `origin/master`, and the `v1.0.0` GitHub Release was created
+(tag + `.xlsx` attached) with the user's explicit go-ahead for both the push and the
+release (separate confirmations — pushing and publishing a release are both
+visible/shared actions). Confirmed live afterward: `check_for_updates.py` run against
+the real repo reports "You're already on the latest version."
 
 ## Where we left off (2026-09-05)
 
@@ -365,10 +368,10 @@ New as of 2026-09-04: see "Where we left off (2026-09-05)" below for the open
 tester-feedback items (dropdown focus-at-bottom, possible keyboard trap, NVDA+Shift+C/R
 documentation tip).
 
-New as of 2026-09-10: commit and push this session's changes (Gameplay tab +
-update-checker), then cut the `v1.0.0` GitHub Release with the `.xlsx` attached — see
-"Where we left off (2026-09-10)" above. Without that release, `check_for_updates.py`
-is shipped but functionally inert for real users.
+New as of 2026-09-10: Gameplay tab and `check_for_updates.py` shipped, pushed, and
+`v1.0.0` released — see "Where we left off (2026-09-10)" above. Going forward, remember
+the release process there (bump `TEMPLATE_VERSION`, rebuild, tag a matching GitHub
+Release with the `.xlsx` attached) whenever a new version should reach testers.
 
 ## Working preferences
 
